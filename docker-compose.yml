@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: betalent-app
+    depends_on:
+      - mysql
+      - gateways-mock
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: betalent
+      DB_USERNAME: betalent
+      DB_PASSWORD: betalent
+      GATEWAY_1_BASE_URL: http://gateways-mock:3001
+      GATEWAY_2_BASE_URL: http://gateways-mock:3002
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/var/www/html
+
+  mysql:
+    image: mysql:8.0
+    container_name: betalent-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: betalent
+      MYSQL_USER: betalent
+      MYSQL_PASSWORD: betalent
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  gateways-mock:
+    image: matheusprotzen/gateways-mock
+    container_name: betalent-gateways-mock
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+
+volumes:
+  mysql_data:
