@@ -8,7 +8,6 @@ use App\Http\Middleware\EnsureUserRole;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $throwable): bool {
+        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $throwable): bool {
             return $request->is('api/*') || $request->expectsJson();
         });
 
