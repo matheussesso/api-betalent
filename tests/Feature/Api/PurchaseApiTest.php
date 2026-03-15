@@ -16,7 +16,7 @@ class PurchaseApiTest extends TestCase
 
     public function test_purchase_uses_gateway_fallback_and_persists_transaction(): void
     {
-        Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
+        $product = Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
 
         Gateway::query()->create([
             'name' => 'Gateway 1',
@@ -51,7 +51,7 @@ class PurchaseApiTest extends TestCase
             'card_number' => '5569000000006063',
             'cvv' => '010',
             'products' => [
-                ['product_id' => 1, 'quantity' => 2],
+                ['product_id' => $product->id, 'quantity' => 2],
             ],
         ]);
 
@@ -69,7 +69,7 @@ class PurchaseApiTest extends TestCase
 
     public function test_purchase_fails_when_cvv_is_invalid_for_all_active_gateways(): void
     {
-        Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
+        $product = Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
 
         Gateway::query()->create([
             'name' => 'Gateway 1',
@@ -93,7 +93,7 @@ class PurchaseApiTest extends TestCase
             'card_number' => '5569000000006063',
             'cvv' => '200',
             'products' => [
-                ['product_id' => 1, 'quantity' => 1],
+                ['product_id' => $product->id, 'quantity' => 1],
             ],
         ]);
 
@@ -157,7 +157,7 @@ class PurchaseApiTest extends TestCase
 
     public function test_purchase_fails_when_no_gateway_is_active(): void
     {
-        Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
+        $product = Product::query()->create(['name' => 'Produto A', 'amount' => 1000]);
 
         $response = $this->postJson('/api/purchase', [
             'client_name' => 'Cliente Teste',
@@ -165,7 +165,7 @@ class PurchaseApiTest extends TestCase
             'card_number' => '5569000000006063',
             'cvv' => '010',
             'products' => [
-                ['product_id' => 1, 'quantity' => 1],
+                ['product_id' => $product->id, 'quantity' => 1],
             ],
         ]);
 
