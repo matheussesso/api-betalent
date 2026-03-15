@@ -20,10 +20,10 @@ Route::middleware('auth.api')->group(function () {
     Route::apiResource('users', UserController::class)->middleware('role:ADMIN,MANAGER');
     Route::apiResource('products', ProductController::class)->middleware('role:ADMIN,MANAGER,FINANCE');
 
-    Route::get('/clients', [ClientController::class, 'index']);
-    Route::get('/clients/{client}', [ClientController::class, 'show']);
+    Route::get('/clients', [ClientController::class, 'index'])->middleware('role:ADMIN,MANAGER');
+    Route::get('/clients/{client}', [ClientController::class, 'show'])->middleware('role:ADMIN,MANAGER');
 
-    Route::get('/transactions', [TransactionController::class, 'index']);
-    Route::get('/transactions/{transaction}', [TransactionController::class, 'show']);
+    Route::get('/transactions', [TransactionController::class, 'index'])->middleware('role:ADMIN,MANAGER,FINANCE');
+    Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->middleware('role:ADMIN,MANAGER,FINANCE');
     Route::post('/transactions/{transaction}/refund', [TransactionController::class, 'refund'])->middleware('role:ADMIN,FINANCE');
 });
