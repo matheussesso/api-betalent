@@ -1,0 +1,490 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Multi-Gateway BeTalent",
+    "version": "1.0.0",
+    "description": "Documentação da API de pagamentos multi-gateway."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Ambiente local"
+    }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Purchase" },
+    { "name": "Gateways" },
+    { "name": "Users" },
+    { "name": "Products" },
+    { "name": "Clients" },
+    { "name": "Transactions" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Token"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "PurchaseRequest": {
+        "type": "object",
+        "required": ["client_name", "client_email", "card_number", "cvv", "products"],
+        "properties": {
+          "client_name": { "type": "string" },
+          "client_email": { "type": "string", "format": "email" },
+          "card_number": { "type": "string", "example": "5569000000006063" },
+          "cvv": { "type": "string", "example": "010" },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["product_id", "quantity"],
+              "properties": {
+                "product_id": { "type": "integer", "example": 1 },
+                "quantity": { "type": "integer", "example": 2 }
+              }
+            }
+          }
+        }
+      },
+      "GatewayToggleRequest": {
+        "type": "object",
+        "required": ["is_active"],
+        "properties": {
+          "is_active": { "type": "boolean", "example": true }
+        }
+      },
+      "GatewayPriorityRequest": {
+        "type": "object",
+        "required": ["priority"],
+        "properties": {
+          "priority": { "type": "integer", "example": 1 }
+        }
+      },
+      "UserRequest": {
+        "type": "object",
+        "required": ["name", "email", "password", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "example": "password" },
+          "role": { "type": "string", "enum": ["ADMIN", "MANAGER", "FINANCE", "USER"] }
+        }
+      },
+      "ProductRequest": {
+        "type": "object",
+        "required": ["name", "amount"],
+        "properties": {
+          "name": { "type": "string" },
+          "amount": { "type": "integer", "example": 1000 }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Realiza login e retorna token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login realizado com sucesso" },
+          "401": { "description": "Credenciais inválidas" }
+        }
+      }
+    },
+    "/api/purchase": {
+      "post": {
+        "tags": ["Purchase"],
+        "summary": "Realiza compra com fallback entre gateways",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PurchaseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Compra criada" },
+          "422": { "description": "Falha de validação/processamento" }
+        }
+      }
+    },
+    "/api/gateways": {
+      "get": {
+        "tags": ["Gateways"],
+        "summary": "Lista gateways (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Lista de gateways" },
+          "401": { "description": "Não autenticado" }
+        }
+      }
+    },
+    "/api/gateways/{gateway}/active": {
+      "patch": {
+        "tags": ["Gateways"],
+        "summary": "Ativa/desativa gateway (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "gateway",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GatewayToggleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Gateway atualizado" },
+          "403": { "description": "Acesso negado" }
+        }
+      }
+    },
+    "/api/gateways/{gateway}/priority": {
+      "patch": {
+        "tags": ["Gateways"],
+        "summary": "Altera prioridade do gateway (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "gateway",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GatewayPriorityRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Prioridade atualizada" },
+          "403": { "description": "Acesso negado" }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lista usuários (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Lista de usuários" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Cria usuário (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Usuário criado" },
+          "422": { "description": "Falha de validação" }
+        }
+      }
+    },
+    "/api/users/{user}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Detalha usuário (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detalhe do usuário" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Atualiza usuário (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Usuário atualizado" }
+        }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Atualiza usuário parcialmente (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Usuário atualizado" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Remove usuário (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "user",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Usuário removido" }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Lista produtos (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Lista de produtos" }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Cria produto (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Produto criado" }
+        }
+      }
+    },
+    "/api/products/{product}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Detalha produto (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detalhe do produto" }
+        }
+      },
+      "put": {
+        "tags": ["Products"],
+        "summary": "Atualiza produto (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Produto atualizado" }
+        }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Atualiza produto parcialmente (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProductRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Produto atualizado" }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Remove produto (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Produto removido" }
+        }
+      }
+    },
+    "/api/clients": {
+      "get": {
+        "tags": ["Clients"],
+        "summary": "Lista clientes (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Lista de clientes" }
+        }
+      }
+    },
+    "/api/clients/{client}": {
+      "get": {
+        "tags": ["Clients"],
+        "summary": "Detalha cliente com compras (ADMIN, MANAGER)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "client",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detalhe do cliente" }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Lista transações (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Lista de transações" }
+        }
+      }
+    },
+    "/api/transactions/{transaction}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "Detalha transação (ADMIN, MANAGER, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detalhe da transação" }
+        }
+      }
+    },
+    "/api/transactions/{transaction}/refund": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "Reembolsa transação (ADMIN, FINANCE)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "transaction",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Reembolso realizado" },
+          "403": { "description": "Acesso negado" }
+        }
+      }
+    }
+  }
+}
