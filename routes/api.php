@@ -13,7 +13,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/purchase', [PurchaseController::class, 'store']);
 
 Route::middleware('auth.api')->group(function () {
-    Route::get('/gateways', [GatewayController::class, 'index']);
+    Route::get('/gateways', [GatewayController::class, 'index'])->middleware('role:ADMIN');
     Route::patch('/gateways/{gateway}/active', [GatewayController::class, 'toggle'])->middleware('role:ADMIN');
     Route::patch('/gateways/{gateway}/priority', [GatewayController::class, 'priority'])->middleware('role:ADMIN');
 
