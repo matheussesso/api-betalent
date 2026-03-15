@@ -161,6 +161,10 @@ class PaymentService
      */
     public function refund(Transaction $transaction): Transaction
     {
+        if ($this->isRefundedStatus((string) $transaction->status)) {
+            throw new PaymentFailedException(message: 'Transação já foi reembolsada.');
+        }
+
         $transaction->load('gateway');
 
         $driver = $this->registry->resolve($transaction->gateway->driver);
@@ -171,5 +175,18 @@ class PaymentService
         ]);
 
         return $transaction->fresh(['client', 'gateway', 'products']);
+    }
+
+    /**
+     * Verifica se o status representa uma transação já reembolsada.
+     *
+     * @param string $status Status atual da transação.
+     * @return bool True quando o status já representa reembolso realizado.
+     */
+    private function isRefundedStatus(string $status): bool
+    {
+        $normalizedStatus = strtolower(trim($status));
+
+        return in_array($normalizedStatus, ['refunded', 'charged_back', 'charge_back'], true);
     }
 }

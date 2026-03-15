@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Exceptions\GatewayRequestException;
+use App\Exceptions\PaymentFailedException;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Services\Payments\PaymentService;
@@ -56,6 +57,10 @@ class TransactionController extends Controller
     {
         try {
             $transaction = $this->paymentService->refund($transaction);
+        } catch (PaymentFailedException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+            ], 422);
         } catch (GatewayRequestException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
