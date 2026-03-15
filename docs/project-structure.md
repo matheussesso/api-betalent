@@ -109,6 +109,9 @@ A o uso do `driver` permite adicionar novos gateways de maneira facilitada, segu
 Subir ambiente:
 
 ```bash
+git clone git@github.com:matheussesso/api-betalent.git
+cd api-betalent
+cp .env.example .env
 docker compose up -d --build
 ```
 

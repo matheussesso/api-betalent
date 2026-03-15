@@ -18,6 +18,9 @@ Implementação do desafio técnico para uma API RESTful com:
 ## Subindo com Docker Compose
 
 ```bash
+git clone git@github.com:matheussesso/api-betalent.git
+cd api-betalent
+cp .env.example .env
 docker compose up -d --build
 ```
 
