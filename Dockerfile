@@ -17,4 +17,4 @@ RUN composer install --no-interaction --prefer-dist
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan key:generate --force && php artisan migrate --force && php artisan db:seed --force && frankenphp php-server --listen 0.0.0.0:8000 --root /var/www/html/public"]
+CMD ["sh", "-c", "if [ ! -f /var/www/html/vendor/autoload.php ]; then composer install --no-interaction --prefer-dist; fi && php artisan key:generate --force && php artisan migrate --force && php artisan db:seed --force && frankenphp php-server --listen 0.0.0.0:8000 --root /var/www/html/public"]
