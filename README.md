@@ -87,8 +87,14 @@ Base URL: `http://localhost:8000/api`
 
 ## Testes
 
-Rodar os testes do desafio:
+Rodar os testes:
 
 ```bash
 docker compose exec app php artisan test --testsuite=Feature
 ```
+
+## Documentações adicionais
+
+- Estrutura e funcionamento do projeto: [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)
+- Estrutura e endpoints da API: [API-STRUCTURE.md](API-STRUCTURE.md)
+- Collection para Postman/Insomnia: [api-betalent.collection.json](api-betalent.collection.json)
