@@ -95,6 +95,6 @@ docker compose exec app php artisan test --testsuite=Feature
 
 ## Documentações adicionais
 
-- Estrutura e funcionamento do projeto: [PROJECT-STRUCTURE.md](PROJECT-STRUCTURE.md)
-- Estrutura e endpoints da API: [API-STRUCTURE.md](API-STRUCTURE.md)
-- Collection para Postman/Insomnia: [api-betalent.collection.json](api-betalent.collection.json)
+- Estrutura e funcionamento do projeto: [docs/project-structure.md](docs/project-structure.md)
+- Estrutura e endpoints da API: [docs/api-structure.md](docs/api-structure.md)
+- Collection para Postman/Insomnia: [docs/api-betalent.collection.json](docs/api-betalent.collection.json)
