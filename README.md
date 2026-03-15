@@ -1,59 +1,94 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# API Multi-Gateway de Pagamentos (Laravel)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Implementação do desafio técnico para uma API RESTful com:
 
-## About Laravel
+- Laravel 12
+- Servidor FrankenPHP
+- Banco de dados MySQL
+- Integração com 2 gateways de pagamento externos, com fallback por prioridade
+- Autenticação por token Bearer
+- Controle de acesso por roles (`ADMIN`, `MANAGER`, `FINANCE`, `USER`)
+- Testes de feature (TDD-oriented)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Requisitos
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Docker
+- Docker Compose
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Subindo com Docker Compose
 
-## Learning Laravel
+```bash
+docker compose up -d --build
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+O container da API executa automaticamente:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `php artisan key:generate --force`
+- `php artisan migrate --force`
+- `php artisan db:seed --force`
+- `frankenphp php-server --listen 0.0.0.0:8000 --root /var/www/html/public`
 
-## Laravel Sponsors
+Serviços:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- API: `http://localhost:8000`
+- MySQL: `localhost:3306`
+- Mock Gateway 1: `http://localhost:3001`
+- Mock Gateway 2: `http://localhost:3002`
 
-### Premium Partners
+## Usuários padrão (seed)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- ADMIN: `admin@betalent.local` / `password`
+- MANAGER: `manager@betalent.local` / `password`
+- FINANCE: `finance@betalent.local` / `password`
 
-## Contributing
+## Regras de negócio implementadas
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- Compra recebe produtos + quantidades e calcula valor no backend (centavos)
+- Tenta cobrança em gateways ativos por ordem de prioridade
+- Em falha no gateway atual, tenta o próximo
+- Se algum gateway aprovar, retorna sucesso sem erro
+- Validação de CVV por gateway:
+	- `gateway_1`: rejeita `100` e `200`
+	- `gateway_2`: rejeita `200` e `300`
+- Reembolso usa o mesmo gateway da transação original
+- Cadastro de gateways modular por `driver` para facilitar expansão futura
 
-## Code of Conduct
+## Rotas
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Base URL: `http://localhost:8000/api`
 
-## Security Vulnerabilities
+### Públicas
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- `POST /login`
+- `POST /purchase`
 
-## License
+### Privadas (`Authorization: Bearer <token>`)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `GET /gateways` (`ADMIN`)
+- `PATCH /gateways/{gateway}/active` (`ADMIN`)
+- `PATCH /gateways/{gateway}/priority` (`ADMIN`)
+- `GET|POST|PUT|PATCH|DELETE /users` (`ADMIN`, `MANAGER`)
+- `GET|POST|PUT|PATCH|DELETE /products` (`ADMIN`, `MANAGER`, `FINANCE`)
+- `GET /clients` (`ADMIN`, `MANAGER`)
+- `GET /clients/{client}` (`ADMIN`, `MANAGER`)
+- `GET /transactions` (`ADMIN`, `MANAGER`, `FINANCE`)
+- `GET /transactions/{transaction}` (`ADMIN`, `MANAGER`, `FINANCE`)
+- `POST /transactions/{transaction}/refund` (`ADMIN`, `FINANCE`)
+
+## Estrutura de dados principal
+
+- `users`: email, password, role
+- `gateways`: name, driver, is_active, priority
+- `clients`: name, email
+- `products`: name, amount
+- `transactions`: client_id, gateway_id, external_id, status, amount, card_last_numbers
+- `transaction_products`: transaction_id, product_id, quantity, unit_amount
+- `api_tokens`: autenticação Bearer do sistema
+
+## Testes
+
+Rodar os testes do desafio:
+
+```bash
+docker compose exec app php artisan test --testsuite=Feature
+```
